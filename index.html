@@ -5,7 +5,6 @@
     <title>Fixla - Reset Password</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Reset your Fixla password">
-    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -107,10 +106,6 @@
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
         
-        input::placeholder {
-            color: #9CA3AF;
-        }
-        
         .password-requirements {
             margin-top: 8px;
             padding: 12px;
@@ -160,10 +155,6 @@
         button:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-        }
-        
-        button:active:not(:disabled) {
-            transform: translateY(0);
         }
         
         button:disabled {
@@ -247,24 +238,6 @@
             text-decoration: none;
             font-weight: 500;
         }
-        
-        .footer a:hover {
-            text-decoration: underline;
-        }
-        
-        @media (max-width: 480px) {
-            .container {
-                padding: 32px 24px;
-            }
-            
-            .app-name {
-                font-size: 24px;
-            }
-            
-            h1 {
-                font-size: 20px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -330,14 +303,20 @@
         const SUPABASE_URL = 'https://ofgiuvjaalcridojramn.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mZ2l1dmphYWxjcmlkb2pyYW1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyMTM2NDEsImV4cCI6MjA2MTc4OTY0MX0.FE0tpB_fJ9W5UwPBtKZxsgjZG-UilPHJ0Lu70moU9J8';
         
+        // Get parameters from URL hash
         const params = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = params.get('access_token');
         const type = params.get('type');
+        
+        // Check if this is a direct visit without token (for testing)
+        const isDirectVisit = !window.location.hash || window.location.hash === '#' || window.location.hash === '#/';
         
         const passwordInput = document.getElementById('password');
         const confirmPasswordInput = document.getElementById('confirmPassword');
         const reqLength = document.getElementById('req-length');
         const reqMatch = document.getElementById('req-match');
+        const errorDiv = document.getElementById('errorMessage');
+        const submitBtn = document.getElementById('submitBtn');
         
         // Password validation
         function validatePasswords() {
@@ -362,25 +341,41 @@
         passwordInput.addEventListener('input', validatePasswords);
         confirmPasswordInput.addEventListener('input', validatePasswords);
         
-        if (!accessToken || type !== 'recovery') {
-            document.getElementById('errorMessage').style.display = 'block';
-            document.getElementById('errorMessage').textContent = 'Invalid or expired reset link. Please request a new password reset.';
-            document.getElementById('submitBtn').disabled = true;
+        // Check if we have a valid reset token
+        if (isDirectVisit) {
+            // This is just a direct visit to test the page
+            console.log('Direct visit - page loaded for testing');
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = 'This is a test visit. To reset your password, use the link from your email.';
+            submitBtn.disabled = true;
+        } else if (!accessToken || type !== 'recovery') {
+            // Invalid or missing token
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = 'Invalid or expired reset link. Please request a new password reset from the app.';
+            submitBtn.disabled = true;
+        } else {
+            // Valid token - allow password reset
+            console.log('Valid reset token detected');
         }
         
+        // Handle form submission
         document.getElementById('resetForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            // Don't process if no token
+            if (!accessToken || type !== 'recovery') {
+                return;
+            }
+            
             const password = passwordInput.value;
             const confirmPassword = confirmPasswordInput.value;
-            const errorDiv = document.getElementById('errorMessage');
             const successDiv = document.getElementById('successMessage');
-            const submitBtn = document.getElementById('submitBtn');
             const buttonText = document.getElementById('buttonText');
             
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
             
+            // Validate passwords
             if (password !== confirmPassword) {
                 errorDiv.style.display = 'block';
                 errorDiv.textContent = 'Passwords do not match';
@@ -393,10 +388,12 @@
                 return;
             }
             
+            // Disable button and show loading
             submitBtn.disabled = true;
             buttonText.innerHTML = '<span class="spinner"></span>Resetting...';
             
             try {
+                // Call Supabase API to update password
                 const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
                     method: 'PUT',
                     headers: {
@@ -408,23 +405,39 @@
                 });
                 
                 if (response.ok) {
+                    // Success! Show success message
                     successDiv.style.display = 'block';
                     document.getElementById('resetForm').style.display = 'none';
                     
-                    // Show open app button
+                    // Show button to open app after a delay
                     setTimeout(() => {
-                        document.getElementById('openAppBtn').style.display = 'block';
-                    }, 1000);
+                        const openBtn = document.getElementById('openAppBtn');
+                        openBtn.style.display = 'block';
+                        openBtn.style.width = '100%';
+                    }, 1500);
                     
-                    // Try to open the app automatically after 2 seconds
+                    // Try to open the app automatically after 3 seconds
                     setTimeout(() => {
+                        // Try to open the app
                         window.location.href = 'fixla://reset-password-success';
-                    }, 2000);
+                        
+                        // If still here after 1 second, show a message
+                        setTimeout(() => {
+                            if (document.getElementById('successMessage')) {
+                                const p = document.createElement('p');
+                                p.style.marginTop = '16px';
+                                p.style.fontSize = '14px';
+                                p.innerHTML = 'If the app didn\'t open, click the button above or open Fixla manually and sign in with your new password.';
+                                document.getElementById('successMessage').appendChild(p);
+                            }
+                        }, 1000);
+                    }, 3000);
                 } else {
                     const error = await response.json();
                     throw new Error(error.msg || 'Failed to reset password');
                 }
             } catch (error) {
+                // Show error
                 errorDiv.style.display = 'block';
                 errorDiv.textContent = error.message || 'Failed to reset password. Please try again.';
                 submitBtn.disabled = false;
@@ -432,8 +445,19 @@
             }
         });
         
+        // Handle manual app open button
         document.getElementById('openAppBtn').addEventListener('click', () => {
             window.location.href = 'fixla://reset-password-success';
+            
+            // Show additional help if app doesn't open
+            setTimeout(() => {
+                const p = document.createElement('p');
+                p.style.marginTop = '16px';
+                p.style.fontSize = '14px';
+                p.style.textAlign = 'center';
+                p.innerHTML = 'If the app didn\'t open, please open Fixla manually and sign in with your new password.';
+                document.querySelector('.container').appendChild(p);
+            }, 1000);
         });
     </script>
 </body>
