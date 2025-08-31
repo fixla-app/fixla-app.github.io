@@ -287,7 +287,7 @@
         
         <div class="message">
             Your email <span class="email" id="userEmail">has been verified</span> successfully.
-            You can now sign in to your Fixla account.
+            You can now return to the Fixla app and sign in.
         </div>
 
         <div class="button-group">
@@ -295,19 +295,16 @@
                 Open Fixla App
             </button>
             
-            <a href="https://apps.apple.com/app/fixla" class="btn btn-primary desktop-only">
-                Download Fixla App
-            </a>
+            <button class="btn btn-primary desktop-only" onclick="openApp()">
+                Return to Fixla App
+            </button>
         </div>
 
-        <div class="divider">or</div>
+        <div class="divider mobile-only">or</div>
 
-        <div class="app-links">
-            <a href="https://apps.apple.com/app/fixla" class="app-link">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Download on App Store">
-            </a>
-            <a href="https://play.google.com/store/apps/details?id=com.fixla.app" class="app-link">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play">
+        <div class="app-links mobile-only">
+            <a href="fixla://email-confirmed" class="btn btn-secondary">
+                Open in App
             </a>
         </div>
 
